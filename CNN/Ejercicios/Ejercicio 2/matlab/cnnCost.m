@@ -73,7 +73,7 @@ activationsPooled = cnnPool(poolDim,activations);
 
 % Redimensionar activations obteniendo 2D matriz, hiddenSize x numImages,
 % para Softmax layer
-activationsPooled = reshape(activationsPooled,[],numImages);
+activationsPooled = reshape(activationsPooled,[],numImages); %size 32 x 11
 
 %% Softmax Layer
 %  Continuamos con la Forward propagation luego de las pooledActivations 
@@ -83,17 +83,20 @@ activationsPooled = reshape(activationsPooled,[],numImages);
 probs = zeros(numClasses,numImages);
 
 %%% IMPLEMENTACION AQUI %%%
-hiddenSize = size(activationsPooled,1);
+hiddenSize = size(activationsPooled,1); %size 32
 
-size(activationsPooled)
-size(probs)
-%activationsPooled
-%probs = activationsPooled
-%for i = 1:numClasses
-%    for j = 1:numImages
-%        probs(i,j) = numClasses(i)/numImages;
-%    end
-%end
+%size(activationsPooled);
+%numClasses; %size 10
+%hiddenSize;
+% Wd --> size numClasses x hiddenSize
+% bd -->
+
+for j = 1:numImages
+    for k = 1:numClasses
+        probs(k,j) = exp(Wd(k,:) * activationsPooled(:,j) + bd(k));
+    end
+    probs(:,j) = probs(:,j) ./ sum(probs(:,j));
+end
 %%======================================================================
 %% PASO 1b: Calculo del Costo
 %  Se van a usar los labels y las probabilidades para calcular la funcion
@@ -103,7 +106,16 @@ cost = 0; % inicializo cost
 
 %%% IMPLEMENTAR AQUI %%%
 
-%cost = exp()/sum(exp())
+
+%theta2 = [Wc,bc];
+%x = [activationsPooled]
+%[Wb, bd] --> 10 x 33
+
+%[M, I] = max(probs);
+for m = 1:numImages
+    cost = cost + log(probs(labels(m), m));
+end
+cost = cost / numImages * -1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
 % Realizar predicciones usando probs y devolver la funcion si calculo de gradientes.
@@ -125,6 +137,45 @@ end;
 %  eficiente.
 
 %%% IMPLEMENTAR AQUI %%%
+
+% xi --> activationsPooled(:,i)
+% activationsPooled --> 32 x 11
+% prob --> 10 x 11
+% labels --> 11 x 1
+% size(Wc) --> 9 x 9 x 2
+% size(Wd) --> 10 x 32
+% size(bc) --> 2 x 1
+% size(bd) --> 10 x 1
+% activations --> 20 x 20 x 2 x 11
+% images --> 28 x 28 x 11
+
+labelsArr = zeros(numClasses,numImages);
+for i = 1:numImages
+    labelsArr(labels(i),i) = 1;
+end
+
+e = labelsArr - probs;
+
+% size(e) --> 10 x 11
+
+Wd_grad = Wd_grad + e * transpose(activationsPooled) / numImages;
+bd_grad = bd_grad + sum(e,2) / numImages;
+
+delta_p2 = transpose(Wd) * e;
+delta_p2_upsampled = (1/(poolDim*poolDim))*kron(delta_p2,ones(poolDim));
+
+ddelta = activations .* (1 - activations); 
+
+% size(dsigma) -> 20 x 20 x 2 x 11
+% size(sigma_p2_upsampled) --> 160 x 55
+delta_c1 = reshape(delta_p2_upsampled, 20, 20, 2, 11) .* ddelta;
+for j = 1:numFilters
+    for i = 1:numImages 
+        Wc_grad(:,:,j) = Wc_grad(:,:,j) + conv2(images(:,:,i),rot90(delta_c1(:,:,j,i)),'valid');
+    end
+    Wc_grad(:,:,j) = Wc_grad(:,:,j)/numImages;
+    bc_grad(j) = sum(sum(sum(delta_c1(:,:,j,:))))/numImages;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

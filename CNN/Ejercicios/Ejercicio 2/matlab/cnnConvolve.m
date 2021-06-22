@@ -46,10 +46,7 @@ for imageNum = 1:numImages
         % Convolucionar "filter" con "im", y adicionarlos a 
         % convolvedImage para estar seguro de realizar una convolucion
         % 'valida'
-        %size(convolvedImage)
-        %size(conv2(im, filter,'same'))
-        %size(conv2(im, filter,'valid'))
-        %convDim
+
         convolvedImage = convolvedImage + conv2(im, filter,'valid');
 
         % Agregar el bias 
@@ -60,7 +57,7 @@ for imageNum = 1:numImages
         %size(bc)
         %size(convolvedImage)
         %size(convolvedFeatures(:, :, filterNum, imageNum))
-        convolvedFeatures(:, :, filterNum, imageNum) = sigmoid(convolvedImage+bc(filterNum));
+        [convolvedFeatures(:, :, filterNum, imageNum), ds] = sigmoid(convolvedImage+bc(filterNum));
     end
 end
 

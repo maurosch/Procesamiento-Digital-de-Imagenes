@@ -38,7 +38,6 @@ for nF = 1:numFilters
                 eH = (poolRow-1)*poolDim+poolDim;
                 sW = (poolCol-1)*poolDim+1;
                 eW = (poolCol-1)*poolDim+poolDim;
-                %size(convolvedFeatures((poolRow*poolDim):(poolRow*poolDim+poolDim-1),(poolCol*poolDim):(poolCol*poolDim+poolDim-1),nF, nI))
                 promedio = mean2(convolvedFeatures(sH:eH,sW:eW,nF, nI));
                 pooledFeatures(poolRow, poolCol, nF, nI) = promedio;
             end
