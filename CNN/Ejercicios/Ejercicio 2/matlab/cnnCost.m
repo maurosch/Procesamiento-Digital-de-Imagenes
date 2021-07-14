@@ -17,7 +17,7 @@ function [cost, grad, preds] = cnnCost(theta,images,labels,numClasses,...
 %
 %
 % Devuelve:
-%  cost       -  costro softmax
+%  cost       -  costo softmax
 %  grad       -  gradientes con respecto a theta (si pred==False)
 %  preds      -  lista de predicciones para cada ejemplo (si pred==True)
 
@@ -49,7 +49,7 @@ bd_grad = zeros(size(bd));
 %%======================================================================
 %% PASO 1a: Forward Propagation
 %  Este paso propaga la entrada de en la capa convolucional, 
-%  sabsampleo (mean pooling), y que luego son usadas como entradas de la 
+%  subsampleo (mean pooling), y que luego son usadas como entradas de la 
 %  capa de softmax.
 
 %% Convolutional Layer
@@ -85,12 +85,6 @@ probs = zeros(numClasses,numImages);
 %%% IMPLEMENTACION AQUI %%%
 hiddenSize = size(activationsPooled,1); %size 32
 
-%size(activationsPooled);
-%numClasses; %size 10
-%hiddenSize;
-% Wd --> size numClasses x hiddenSize
-% bd -->
-
 for j = 1:numImages
     for k = 1:numClasses
         probs(k,j) = exp(Wd(k,:) * activationsPooled(:,j) + bd(k));
@@ -106,12 +100,6 @@ cost = 0; % inicializo cost
 
 %%% IMPLEMENTAR AQUI %%%
 
-
-%theta2 = [Wc,bc];
-%x = [activationsPooled]
-%[Wb, bd] --> 10 x 33
-
-%[M, I] = max(probs);
 for m = 1:numImages
     cost = cost + log(probs(labels(m), m));
 end
@@ -138,7 +126,6 @@ end;
 
 %%% IMPLEMENTAR AQUI %%%
 
-% xi --> activationsPooled(:,i)
 % activationsPooled --> 32 x 11
 % prob --> 10 x 11
 % labels --> 11 x 1
@@ -157,26 +144,22 @@ end
 e = labelsArr - probs;
 
 % size(e) --> 10 x 11
-
-Wd_grad = Wd_grad + e * transpose(activationsPooled) / numImages;
-bd_grad = bd_grad + sum(e,2) / numImages;
-
-delta_p2 = transpose(Wd) * e;
-delta_p2_upsampled = (1/(poolDim*poolDim))*kron(delta_p2,ones(poolDim));
-
-ddelta = activations .* (1 - activations); 
-
-% size(dsigma) -> 20 x 20 x 2 x 11
-% size(sigma_p2_upsampled) --> 160 x 55
-delta_c1 = reshape(delta_p2_upsampled, 20, 20, 2, 11) .* ddelta;
-for j = 1:numFilters
-    for i = 1:numImages 
-        Wc_grad(:,:,j) = Wc_grad(:,:,j) + conv2(images(:,:,i),rot90(delta_c1(:,:,j,i)),'valid');
+ddelta = activations .* (1 - activations); %<-- 20x20x2x11
+%delta_c1 = zeros(convDim, convDim, numFilters, numImages); %<-- 20x20x2x11
+delta_c1 = zeros(filterDim, filterDim, numFilters, numImages); %<-- 9x9x2x11
+for h = 1:numImages
+    delta_p2 = transpose(Wd) * e(:,h);
+    delta_p2 = reshape(delta_p2, [], outputDim, numFilters); % 4x4x2
+    delta_p2_upsampled = zeros(convDim, convDim, numFilters); % 20x20x2
+    for i = 1:numFilters
+        delta_p2_upsampled(:,:,i) = (1/(poolDim*poolDim))*kron(delta_p2(:,:,i),ones(poolDim)); % 20x20
+        %delta_c1(:,:,i,h) = delta_p2_upsampled(:,:,i) .* ddelta(:,:,i,h);
+        %size(conv2(images(:,:,i), ddelta(:,:,i,h),'full'))
+        %size(conv2(images(:,:,i), ddelta(:,:,i,h),'valid'))
+        %size(conv2(images(:,:,i), ddelta(:,:,i,h),'same'))
+        delta_c1(:,:,i,h) = conv2(images(:,:,i), ddelta(:,:,i,h),'valid');
     end
-    Wc_grad(:,:,j) = Wc_grad(:,:,j)/numImages;
-    bc_grad(j) = sum(sum(sum(delta_c1(:,:,j,:))))/numImages;
 end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%======================================================================
@@ -188,6 +171,16 @@ end
 %  para cada imagen y acumularlo sobre todas las imagenes.
 
 %%% YOUR CODE HERE %%%
+
+Wd_grad = Wd_grad + e * transpose(activationsPooled) / numImages;
+bd_grad = bd_grad + sum(e,2) / numImages;
+for j = 1:numFilters
+    for i = 1:numImages
+        Wc_grad(:,:,j) = Wc_grad(:,:,j) + conv2(rot90(Wc(:,:,j),2),delta_c1(:,:,j,i),'valid');
+    end
+    Wc_grad(:,:,j) = Wc_grad(:,:,j)/numImages;
+    bc_grad(j) = bc_grad(j) + sum(sum(sum(delta_c1(:,:,j,:))))/numImages;
+end
 
 
 %% Desenrollar los gradientes en un vector para usar luego por minFunc

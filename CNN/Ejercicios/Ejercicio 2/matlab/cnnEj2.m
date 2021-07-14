@@ -170,6 +170,7 @@ if DEBUG
                                 db_numFilters,db_poolDim), db_theta);
  
    
+    
     diff = norm(numGrad-grad)/norm(numGrad+grad);
     % Diff deberia ser muy pequeño. 
     disp(diff); 

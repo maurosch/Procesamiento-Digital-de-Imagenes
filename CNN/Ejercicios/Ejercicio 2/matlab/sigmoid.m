@@ -1,4 +1,4 @@
-function [z, dSigmoid] = sigmoid(x)
+function z = sigmoid(x)
     z = 1./(1+exp(-x));
-    dSigmoid = z * (1 - z);
+    %dSigmoid = z * (1 - z);
 end

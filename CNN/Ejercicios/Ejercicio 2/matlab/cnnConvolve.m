@@ -57,7 +57,7 @@ for imageNum = 1:numImages
         %size(bc)
         %size(convolvedImage)
         %size(convolvedFeatures(:, :, filterNum, imageNum))
-        [convolvedFeatures(:, :, filterNum, imageNum), ds] = sigmoid(convolvedImage+bc(filterNum));
+        convolvedFeatures(:, :, filterNum, imageNum) = sigmoid(convolvedImage+bc(filterNum));
     end
 end
 
